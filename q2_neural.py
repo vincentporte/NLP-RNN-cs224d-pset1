@@ -31,16 +31,10 @@ def forward_backward_prop(data, labels, params, dimensions):
     # b1     1 x H
     # W2     H x V
     # b2     1 x V
-    # labels N x V
-    N = data.shape[0]         
-    z2 = np.dot(data,W1) + b1  # N x H
-    a2 = sigmoid(z2)         # N x H
-    z3 = np.dot(a2,W2) + b2  # N x V
-    a3 = softmax(z3)         # N x V
-    
-    cost = -np.sum(labels * np.log(a3)) # cross entropy
-
-    
+    # labels N x V         
+    a2 = sigmoid(np.dot(data,W1) + b1)         # N x H
+    a3 = softmax(np.dot(a2,W2) + b2)           # N x V
+    cost = -np.sum(labels * np.log(a3))        # cross entropy   
     ### END YOUR CODE
     
     ### YOUR CODE HERE: backward propagation
@@ -50,12 +44,13 @@ def forward_backward_prop(data, labels, params, dimensions):
     delta2 = np.dot(delta3,W2.T) * sigmoid_grad(a2)
     gradW1 = np.dot(data.T,delta2)
     gradb1 = np.sum(delta2, axis=0)
+       
     ### END YOUR CODE
     
     ### Stack gradients (do not modify)
     grad = np.concatenate((gradW1.flatten(), gradb1.flatten(), 
         gradW2.flatten(), gradb2.flatten()))
-   
+
     return cost, grad
 
 def sanity_check():
@@ -67,6 +62,7 @@ def sanity_check():
 
     N = 20
     dimensions = [10, 5, 10]
+
     data = np.random.randn(N, dimensions[0])   # each row will be a datum
     labels = np.zeros((N, dimensions[2]))
     for i in range(N):

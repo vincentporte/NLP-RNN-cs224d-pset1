@@ -17,51 +17,32 @@ def softmax(x):
     it helpful for your later problems.
 
     You must implement the optimization in problem 1(a) of the 
-    written assignment!
-    
-    a :
-        [[1001 1002]
-         [   3    4]]
-    a.shape : (2, 2)
-    len(a.shape) : 2
-    np.max(a, axis = 0, keepdims=True) :
-        [[1002]
-         [   4]]
-    b :
-        [1001 1002]
-    b.shape : (2,)
-    len(b.shape) : 1
-    
-    c = b.reshape(1, b.shape[0]) :
-        [[1001 1002]]
-    c.shape : (1, 2)
-    
+    written assignment!  
     """
 
     ### YOUR CODE HERE
-    
-    #transform Nx1 in 1xN (1 row x N cols) else keep NxM
-    ##if len(x.shape) == 1:
-    ##    x = x.reshape(1, x.shape[0])
-    ##
-    ##  # Compute the actual softmax function
-    ## # np.max(x, axis = 1, keepdims=True) give max value for each row
-    ## xexp = np.exp(x - np.max(x, axis = 1, keepdims=True))
-    ## x = (xexp / np.sum(xexp, 1))
+    # clean implementation of Thomas W
+    # take care of one dimensional inputs
+    if len(x.shape) == 1:
+        x = x.reshape(1, x.shape[0])
+        #print("x.reshape(1, x.shape[0])",x)
 
-    if len(x.shape) > 1:
-        tmp = np.max(x, axis = 1)
-        x -= tmp.reshape((x.shape[0], 1))
-        x = np.exp(x)
-        tmp = np.sum(x, axis = 1)
-        x /= tmp.reshape((x.shape[0], 1))
-    else:
-        tmp = np.max(x)
-        x -= tmp
-        x = np.exp(x)
-        tmp = np.sum(x)
-        x /= tmp
-    
+    # Substract the max for each row
+    max_x = np.amax(x,1, keepdims=True)
+    x = x - max_x
+
+    # Get normalized proba
+    x = np.exp(x)
+    norm_x = np.sum(x, 1, keepdims=True)
+    x = x / norm_x
+
+    # Set back to single row if input was one dimensionnal
+    #print "x shape: " + str(x.shape)
+    if x.shape[0] == 1:
+        #print("before x.flatten()",x)
+        x = x.flatten()  
+        #print("x.flatten()",x)
+   
     ### END YOUR CODE
     
     return x

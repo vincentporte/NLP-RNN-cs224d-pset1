@@ -10,7 +10,7 @@ def normalizeRows(x):
     # Implement a function that normalizes each row of a matrix to have unit length
     
     ### YOUR CODE HERE
-    x = x / x.sum(axis=1, keepdims=True)
+    x = x / np.sqrt(np.sum(x * x, axis=1, keepdims=True) + 1e-30)
     ### END YOUR CODE
     
     return x
@@ -45,48 +45,26 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     # - grad: the gradient with respect to all the other word        
     #        vectors                                               
     
-    # We will not provide starter code for this function, but feel    
-    # free to reference the code you previously wrote for this        
-    # assignment!                                                  
     
     ### YOUR CODE HERE
-    print ("==softmax======================")
-    #print ("target: ", str(target))
-    #print ("predicted shape: ",str(predicted.shape))
-    #print ("outputVectors shape: ",str(outputVectors.shape))
-
-    ##N = outputVectors.shape[0]                     # n_words: vocab size
-    ##labels = np.zeros(N)
-    ##labels[target] = 1                             # (n_words)
-    ##print ("labels", labels)
-
-    ##score = np.dot(predicted, outputVectors.T)     
-    ##out = softmax(score)
-    ##cost = -np.sum(labels * np.log(out))       
-    
-    ##delta = out - labels
-    ##print ("delta",delta, "delta.shape",delta.shape)
-
-    ## outputVectors = U
-    ## dJ/dv_c = delta*U^T 
-    ##gradPred = np.dot(outputVectors.T,delta)             
-    ##print ("gradPred", gradPred, "shape", gradPred.shape)
-
-    ## gradient wrt all other word vectors
-    ## dJ/du_w = delta * predicted^T
-    ##print("delta.shape",delta.shape,"predicted.T.shape",predicted.T.shape)
-    ##grad = np.outer(delta, predicted)             
-    
-    ##print ("cost",cost)
-    ##print ("gradPred",gradPred, "grad",grad)
+    #print ("==softmax======================")
+    #print ("target", target)
+    #print ("predicted.shape",predicted.shape)
+    #print ("predicted",predicted)
+    #print ("outputVectors.shape",outputVectors.shape)
+    #print ("outputVectors",outputVectors)
     
     z = outputVectors.dot(predicted)
     y_hat = softmax(z)
     cost = - np.log(y_hat[target])
+    #print ("y_hat",y_hat)
+    #print ("y_hat[target]",y_hat[target])
 
     # delta = y_hat - y
     delta = y_hat
     delta[target] -= 1
+    
+    #print ("delta[target] -= 1",delta)
 
     # get gradient shapes from the jacobian
     # N is the size of the vocabulary (your output dim)
@@ -97,11 +75,12 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     # outputVectors = U
     # dJ/dv_c = delta*U^T - tranpose of jacobian
     gradPred = delta.dot(outputVectors)
-
+    print ("gradPred.shape",gradPred.shape)
+    
     # gradient wrt all other word vectors
     # dJ/du_w = delta * predicted^T
     grad = np.outer(delta, predicted)
-    
+    print ("grad.shape",grad.shape)    
     
     ### END YOUR CODE
     
@@ -126,46 +105,11 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     
     ### YOUR CODE HERE
     print ("==neg-sampling======================")
-    #print ("target: ", str(target))
-    #print ("predicted: ", str(predicted.shape))
-    #print ("outputVectors: ", str(outputVectors.shape))
-
-    
-    #initialize gradients since updates will be sparse
-    ##gradPred = np.zeros(predicted.shape)
-    ##grad = np.zeros(outputVectors.shape)
-    
-    ##N = outputVectors.shape[0]                     # n_words: vocab size
-    ##labels = np.zeros(N)
-    ##labels[target] = 1                                   
-
-    ##score = np.dot(predicted, outputVectors.T)      
-    ##out = sigmoid(score)
-    ##cost = -np.sum(labels * np.log(out))       
-
-    ##delta = out - labels
-    ##gradPred += np.dot(outputVectors.T,delta)              
-    ##grad += np.outer(delta, predicted)            
-    
-    # iterating thru K negative samples
-    # adding gradient and cost contributed by negative sampling
-
-    ##for k in range(K):
-    ##    neg_sampled_idx = dataset.sampleTokenIdx()
-    ##    scoreNeg = np.dot(predicted, outputVectors[neg_sampled_idx].T)      
-    ##    outNeg = sigmoid(scoreNeg)
-    ##    cost -= np.log(outNeg)
-    ##    #gradPred += out[neg_sampled_idx] * outputVectors[neg_sampled_idx]
-    ##    gradPred += np.dot(out[neg_sampled_idx],outputVectors[neg_sampled_idx])
-    ##    #grad[neg_sampled_idx] += out[neg_sampled_idx] * predicted
-    ##    grad[neg_sampled_idx] += np.dot(out[neg_sampled_idx],predicted)
-    
-    ##print ("cost",cost)
-    ##print ("gradPred",gradPred, "grad",grad)
     
     # initialize gradients since updates will be sparse
     gradPred = np.zeros(predicted.shape)
     grad = np.zeros(outputVectors.shape)
+
     # log(sigmoid(u_o^T v_c))
     z_pos = outputVectors[target].dot(predicted)
     p_pos = sigmoid(z_pos)
@@ -354,10 +298,10 @@ def test_word2vec():
     dummy_vectors = normalizeRows(np.random.randn(10,3))
     dummy_tokens = dict([("a",0), ("b",1), ("c",2),("d",3),("e",4)])
     print ("==== Gradient check for skip-gram ====")
-    #gradcheck_naive(lambda vec: word2vec_sgd_wrapper(skipgram, dummy_tokens, vec, dataset, 5), dummy_vectors)
-    #gradcheck_naive(lambda vec: word2vec_sgd_wrapper(skipgram, dummy_tokens, vec, dataset, 5, negSamplingCostAndGradient), dummy_vectors)
+    gradcheck_naive(lambda vec: word2vec_sgd_wrapper(skipgram, dummy_tokens, vec, dataset, 5), dummy_vectors)
+    gradcheck_naive(lambda vec: word2vec_sgd_wrapper(skipgram, dummy_tokens, vec, dataset, 5, negSamplingCostAndGradient), dummy_vectors)
     print ("\n==== Gradient check for CBOW      ====")
-    #gradcheck_naive(lambda vec: word2vec_sgd_wrapper(cbow, dummy_tokens, vec, dataset, 5), dummy_vectors)
+    gradcheck_naive(lambda vec: word2vec_sgd_wrapper(cbow, dummy_tokens, vec, dataset, 5), dummy_vectors)
     gradcheck_naive(lambda vec: word2vec_sgd_wrapper(cbow, dummy_tokens, vec, dataset, 5, negSamplingCostAndGradient), dummy_vectors)
 
     print ("\n=============================================")
