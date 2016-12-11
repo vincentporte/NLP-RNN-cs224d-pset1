@@ -26,6 +26,8 @@ def forward_backward_prop(data, labels, params, dimensions):
     b2 = np.reshape(params[ofs:ofs + Dy], (1, Dy))
 
     ### YOUR CODE HERE: forward propagation
+    print ("labels:",labels)
+    
     # data   N x D 
     # W1     D x H
     # b1     1 x H
@@ -83,7 +85,7 @@ def your_sanity_checks():
     """
     print ("Running your sanity checks...")
     ### YOUR CODE HERE
-    raise NotImplementedError
+    """raise NotImplementedError"""
     ### END YOUR CODE
 
 if __name__ == "__main__":

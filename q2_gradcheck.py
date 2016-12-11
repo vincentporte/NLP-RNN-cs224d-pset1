@@ -30,8 +30,10 @@ def gradcheck_naive(f, x):
         
         old_value = x[ix]
         x[ix] = old_value + h # increment by h
+        random.setstate(rndstate)
         fxph,_ = f(x) # evaluate f(x + h)
         x[ix] = old_value - h # decrement by h
+        random.setstate(rndstate)
         fxnh,_ = f(x) # evaluate f(x - h)
         x[ix] = old_value # restore to previous value (very important)
         # compute the partial derivative
@@ -41,13 +43,13 @@ def gradcheck_naive(f, x):
         ### END YOUR CODE
 
         # Compare gradients
-        ##print ("numgrad", numgrad, "ix", ix, "grad[ix]", grad[ix])
+        print ("numgrad", numgrad, "ix", ix, "grad[ix]", grad[ix])
         reldiff = abs(numgrad - grad[ix]) / max(1, abs(numgrad), abs(grad[ix]))
         if reldiff > 1e-5:
             print ("Gradient check failed.")
             ##print ("First gradient error found at index %s") % str(ix)
-            print ("First gradient error found at index %s", str(ix))
-            print ("Your gradient: %f \t Numerical gradient: %f",(grad[ix], numgrad))
+            print ("First gradient error found at index %s" str(ix))
+            print ("Your gradient: %f \t Numerical gradient: %f" (grad[ix], numgrad))
             return
     
         it.iternext() # Step to next dimension
@@ -75,8 +77,14 @@ def your_sanity_checks():
     """
     print ("Running your sanity checks...")
     ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
+    #https://github.com/ZhangBanger/cs224d/blob/master/assignment1/q2_gradcheck.py
+    foo = lambda x: (np.sum(np.power(x, 2)), 2 * x)
+    gradcheck_naive(foo, np.array([300.455, 3.5]))
+    bar = lambda x: (np.sum(np.exp(x)), np.exp(x))
+    gradcheck_naive(bar, np.array([[5., 2., 1.], [3., 3., 2.]]))
+
+    baz = lambda x: (np.sum(np.exp(x ** 2)), np.exp(x ** 2) * 2 * x)
+    gradcheck_naive(baz, np.array([3., 2., 1.]))    ### END YOUR CODE
 
 if __name__ == "__main__":
     sanity_check()

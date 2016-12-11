@@ -54,33 +54,43 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     #print ("outputVectors.shape",outputVectors.shape)
     #print ("outputVectors",outputVectors)
     
-    z = outputVectors.dot(predicted)
-    y_hat = softmax(z)
-    cost = - np.log(y_hat[target])
+    #z = outputVectors.dot(predicted)
+    #z = predicted.dot(outputVectors.T)
+    #y_hat = softmax(z)
+    #cost = - np.log(y_hat[target])
     #print ("y_hat",y_hat)
-    #print ("y_hat[target]",y_hat[target])
+    #print ("softmax cost:",cost)
 
     # delta = y_hat - y
-    delta = y_hat
-    delta[target] -= 1
+    #delta = y_hat
+    #delta[target] -= 1
     
     #print ("delta[target] -= 1",delta)
 
     # get gradient shapes from the jacobian
     # N is the size of the vocabulary (your output dim)
     # D is the size of the word vector
-    N = delta.shape[0]
-    D = predicted.shape[0]
+    #N = delta.shape[0]
+    #D = predicted.shape[0]
 
     # outputVectors = U
     # dJ/dv_c = delta*U^T - tranpose of jacobian
-    gradPred = delta.dot(outputVectors)
-    print ("gradPred.shape",gradPred.shape)
+    #gradPred = delta.dot(outputVectors)
+    #print ("softmax gradPred:",gradPred)
     
     # gradient wrt all other word vectors
     # dJ/du_w = delta * predicted^T
-    grad = np.outer(delta, predicted)
-    print ("grad.shape",grad.shape)    
+    #grad = np.outer(delta, predicted)
+    #print ("softmax grad:",grad)
+    
+    probabilities = softmax(predicted.dot(outputVectors.T))
+    cost = -np.log(probabilities[target])
+    delta = probabilities
+    delta[target] -= 1
+    N = delta.shape[0]
+    D = predicted.shape[0]
+    grad = delta.reshape((N,1)) * predicted.reshape((1,D))
+    gradPred = (delta.reshape((1,N)).dot(outputVectors)).flatten()
     
     ### END YOUR CODE
     
@@ -104,49 +114,72 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     # assignment!
     
     ### YOUR CODE HERE
-    print ("==neg-sampling======================")
+    #print ("==neg-sampling======================")
     
     # initialize gradients since updates will be sparse
-    gradPred = np.zeros(predicted.shape)
-    grad = np.zeros(outputVectors.shape)
+    #gradPred = np.zeros(predicted.shape)
+    #grad = np.zeros(outputVectors.shape)
 
     # log(sigmoid(u_o^T v_c))
-    z_pos = outputVectors[target].dot(predicted)
-    p_pos = sigmoid(z_pos)
-    log_p_pos = np.log(p_pos)
+    #z_pos = outputVectors[target].dot(predicted)
+    #p_pos = sigmoid(z_pos)
+    #log_p_pos = np.log(p_pos)
 
     # Sum over K of log(sigmoid(-u_k^T v_c))
-    sum_neg = 0
-    ns_idxs = np.zeros(K)
-    neg_sample_deltas = np.zeros(K)
-    for i in range(K):
-        ns_idx = dataset.sampleTokenIdx()
-        while ns_idx == target:
-            ns_idx = dataset.sampleTokenIdx()
-        z_neg = - outputVectors[ns_idx].dot(predicted)
-        p_neg = sigmoid(z_neg)
-        log_p_neg = np.log(p_neg)
+    #sum_neg = 0
+    #ns_idxs = np.zeros(K)
+    #neg_sample_deltas = np.zeros(K)
+    #for i in range(K):
+    #    ns_idx = dataset.sampleTokenIdx()
+    #    while ns_idx == target:
+    #        ns_idx = dataset.sampleTokenIdx()
+    #    z_neg = - outputVectors[ns_idx].dot(predicted)
+    #    p_neg = sigmoid(z_neg)
+    #    log_p_neg = np.log(p_neg)
 
-        sum_neg += log_p_neg
-        # bookeeping for gradients
-        ns_idxs[i] = ns_idx
-        neg_sample_deltas[i] = p_neg - 1
+    #    sum_neg += log_p_neg
+    #    # bookeeping for gradients
+    #    ns_idxs[i] = ns_idx
+    #    neg_sample_deltas[i] = p_neg - 1
 
-    cost = - log_p_pos - sum_neg
+    #cost = - log_p_pos - sum_neg
 
     # dJ/dv_c
     # (sigmoid(u_o^T v_c) - 1) u_o
-    delta_pos = p_pos - 1
-    gradPred += delta_pos * outputVectors[target]
-    for i in range(K):
-        gradPred -= neg_sample_deltas[i] * outputVectors[ns_idxs[i]]
+    #delta_pos = p_pos - 1
+    #gradPred += delta_pos * outputVectors[target]
+    #for i in range(K):
+    #    gradPred -= neg_sample_deltas[i] * outputVectors[ns_idxs[i]]
 
     # dJ/du_o
-    grad[target] = delta_pos * predicted
+    #grad[target] = delta_pos * predicted
 
     # dJ/du_k
-    for i in range(K):
-        grad[ns_idxs[i]] -= neg_sample_deltas[i] * predicted
+    #for i in range(K):
+    #   grad[ns_idxs[i]] -= neg_sample_deltas[i] * predicted
+
+    grad = np.zeros(outputVectors.shape)
+    gradPred = np.zeros(predicted.shape)
+    
+    indices = [target]
+    for k in range(K):
+        newidx = dataset.sampleTokenIdx()
+        while newidx == target:
+            newidx = dataset.sampleTokenIdx()
+        indices += [newidx]
+        
+    labels = np.array([1] + [-1 for k in range(K)])
+    vecs = outputVectors[indices,:]
+    
+    t = sigmoid(vecs.dot(predicted) * labels)
+    cost = -np.sum(np.log(t))
+    
+    delta = labels * (t - 1)
+    gradPred = delta.reshape((1,K+1)).dot(vecs).flatten()
+    gradtemp = delta.reshape((K+1,1)).dot(predicted.reshape(
+        (1,predicted.shape[0])))
+    for k in range(K+1):
+        grad[indices[k]] += gradtemp[k,:]
 
     
     ### END YOUR CODE
@@ -182,33 +215,48 @@ def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
 
     ### YOUR CODE HERE
     print ("==skipgram==========================================================")
-    print ("currentWord: ", str(currentWord))
-    print ("target: ", str(currentWord))
-    print ("contextWords: ", str(contextWords))
-    print ("vocab: tokens: ", str(tokens))
+    #print ("currentWord: ", str(currentWord))
+    #print ("target: ", str(currentWord))
+    #print ("contextWords: ", str(contextWords))
+    #print ("vocab: tokens: ", str(tokens))
     #print ("inputVectors: ", str(inputVectors.shape))
     #print ("outputVectors: ", str(outputVectors.shape))
 
-    cost = 0
-    gradIn = np.zeros(inputVectors.shape)
-    gradOut = np.zeros(outputVectors.shape)
+    #cost = 0
+    #gradIn = np.zeros(inputVectors.shape)
+    #gradOut = np.zeros(outputVectors.shape)
 
     # we are gathering input_word, its index in vocabulary and its feature vector
-    current_word_index = tokens[currentWord]
-    current_word_vector = inputVectors[current_word_index]
-    print ("current_word_index",current_word_index)
+    #current_word_index = tokens[currentWord]
+    #current_word_vector = inputVectors[current_word_index]
+    #print ("current_word_index",current_word_index)
     #print ("current_word_vector",current_word_vector)
     
     # iterating thru each of the context words that are predicted
-    for contextWord in contextWords:
+    #for contextWord in contextWords:
         # get target word index from vocabulary
-        context_word_index = tokens[contextWord]
-        c_cost, c_grad_in, c_grad_out = word2vecCostAndGradient(current_word_vector, context_word_index, outputVectors, dataset)
-        cost += c_cost
-        gradIn[context_word_index] += c_grad_in
-        gradOut += c_grad_out
+    #    context_word_index = tokens[contextWord]
+    #    c_cost, c_grad_in, c_grad_out = word2vecCostAndGradient(current_word_vector, context_word_index, outputVectors, dataset)
+    #    cost += c_cost
+    #    gradIn[context_word_index] += c_grad_in
+    #   gradOut += c_grad_out
 
-    print ("cost",cost, "gradIn",gradIn, "gradOut",gradOut)
+    #print ("cost",cost, "gradIn",gradIn, "gradOut",gradOut)
+    
+    currentI = tokens[currentWord]
+    predicted = inputVectors[currentI, :]
+    
+    cost = 0.0
+    gradIn = np.zeros(inputVectors.shape)
+    gradOut = np.zeros(outputVectors.shape)
+    for cwd in contextWords:
+        idx = tokens[cwd]
+        cc, gp, gg = word2vecCostAndGradient(predicted, idx, outputVectors, dataset)
+        cost += cc
+        gradOut += gg
+        gradIn[currentI, :] += gp
+
+    
     ### END YOUR CODE
     
     return cost, gradIn, gradOut
@@ -299,10 +347,10 @@ def test_word2vec():
     dummy_tokens = dict([("a",0), ("b",1), ("c",2),("d",3),("e",4)])
     print ("==== Gradient check for skip-gram ====")
     gradcheck_naive(lambda vec: word2vec_sgd_wrapper(skipgram, dummy_tokens, vec, dataset, 5), dummy_vectors)
-    gradcheck_naive(lambda vec: word2vec_sgd_wrapper(skipgram, dummy_tokens, vec, dataset, 5, negSamplingCostAndGradient), dummy_vectors)
+    #gradcheck_naive(lambda vec: word2vec_sgd_wrapper(skipgram, dummy_tokens, vec, dataset, 5, negSamplingCostAndGradient), dummy_vectors)
     print ("\n==== Gradient check for CBOW      ====")
-    gradcheck_naive(lambda vec: word2vec_sgd_wrapper(cbow, dummy_tokens, vec, dataset, 5), dummy_vectors)
-    gradcheck_naive(lambda vec: word2vec_sgd_wrapper(cbow, dummy_tokens, vec, dataset, 5, negSamplingCostAndGradient), dummy_vectors)
+    #gradcheck_naive(lambda vec: word2vec_sgd_wrapper(cbow, dummy_tokens, vec, dataset, 5), dummy_vectors)
+    #gradcheck_naive(lambda vec: word2vec_sgd_wrapper(cbow, dummy_tokens, vec, dataset, 5, negSamplingCostAndGradient), dummy_vectors)
 
     print ("\n=============================================")
     print ("\n=============================================")
